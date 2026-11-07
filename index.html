@@ -327,7 +327,7 @@
   let seen = new Set();
   try { seen = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...seen])); } catch (e) {} };
-  const ready = () => seen.size >= trips.length;
+  const ready = () => true;   // подарок открыт сразу, смотреть все ролики не нужно (просьба 07.11)
 
   // детерминированный «случай» — декор одинаковый при каждой отрисовке
   let seed = 7;
