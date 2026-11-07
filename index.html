@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дорога, которую мы проехали</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Manrope:wght@400;600;700&family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Ночь — по умолчанию */
+  :root {
+    --bg: #0d1417; --dot: rgba(239,230,214,.3);
+    --on-bg: #efe6d6; --on-bg-muted: #93a5a0;
+    --road: #efe6d6; --lane: #0d1417;
+    --flag: #ea7f24; --flag-ink: #fff8ef; --post: #a8957a;
+    --card: #efe6d6; --card-ink: #1b2428; --card-muted: #756f64;
+    --accent: #f29a3a; --tree1: #3f5d52; --tree2: #6f8a76; --car: #ef8126;
+    --paper: #f4ede1; --paper-2: #e6dccb; --ink: #1b2428; --amber: #ea7f24; --amber-deep: #c2601a; --muted: #6d6a62;
+    --shade: rgba(10,14,16,.74);
+  }
+  :root[data-theme="day"] {
+    --bg: #ece3d4; --dot: rgba(27,36,40,.16);
+    --on-bg: #1b2428; --on-bg-muted: #6f6a60;
+    --road: #fbf8f2; --lane: #2b3d52;
+    --flag: #2b3d52; --flag-ink: #f4ede1; --post: #9b8a70;
+    --card: #d9c4a0; --card-ink: #1b2428; --card-muted: #5c5243;
+    --accent: #df6f22; --tree1: #6f8b78; --tree2: #c98b6b; --car: #e2731f;
+    --shade: rgba(27,36,40,.62);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--on-bg); font-family: Manrope, system-ui, sans-serif;
+    transition: background .4s, color .4s; overflow-x: hidden; }
+
+  .hero { max-width: 760px; margin: 0 auto; padding: 72px 20px 8px; text-align: center; }
+  .over { font: 600 13px/1 Oswald, sans-serif; letter-spacing: .28em; text-transform: uppercase; color: var(--accent); }
+  .hero h1 { margin: 16px 0 0; font: 600 clamp(38px, 7vw, 78px)/1.02 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { margin: 18px auto 0; max-width: 520px; color: var(--on-bg-muted); font-size: 16px; line-height: 1.55; }
+  .progress { margin: 22px auto 0; max-width: 300px; display: flex; align-items: center; gap: 12px;
+    font-size: 13px; color: var(--on-bg-muted); }
+  .bar { flex: 1; height: 4px; background: color-mix(in srgb, var(--on-bg) 14%, transparent); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .6s ease; }
+
+  #road { position: relative; max-width: 1100px; margin: 0 auto 80px; }
+  #road svg { display: block; overflow: visible; }
+
+  /* указатели */
+  .sign { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center;
+    border: 0; background: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+  .sign .card { background: var(--card); color: var(--card-ink); border-radius: 6px; padding: 12px 16px 11px;
+    min-width: 150px; max-width: 230px; text-align: left; box-shadow: 0 10px 24px rgba(0,0,0,.22);
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; position: relative; }
+  .sign .post { width: 4px; height: 26px; background: var(--post); }
+  .sign b { display: block; font: 600 17px/1.15 Oswald, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+  .sign small { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 13px; color: var(--card-muted); }
+  .sign small::before { content: ""; width: 0; height: 0; border-left: 8px solid currentColor;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .sign:hover .card, .sign:focus-visible .card { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(0,0,0,.3); }
+  .sign.seen .card::after { content: "✓"; position: absolute; top: -9px; right: -9px; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; display: grid; place-items: center; }
+
+  /* флажки с годами */
+  .flag { position: absolute; width: 0; height: 0; pointer-events: none; }
+  .flag .pole { position: absolute; left: -2px; bottom: 0; width: 3px; height: 74px; background: var(--post); }
+  .flag .cloth { position: absolute; bottom: 38px; left: 1px; background: var(--flag); color: var(--flag-ink);
+    font: 600 22px/1 Oswald, sans-serif; letter-spacing: .04em; padding: 7px 26px 7px 12px;
+    clip-path: polygon(0 0, 100% 0, 86% 50%, 100% 100%, 0 100%); white-space: nowrap; }
+  .flag.left .cloth { left: auto; right: 1px; padding: 7px 12px 7px 26px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14% 50%); }
+
+  /* финиш */
+  .finish { position: absolute; transform: translate(-50%, -50%); border: 0; background: none; padding: 0; cursor: pointer;
+    display: grid; justify-items: center; gap: 10px; font: inherit; color: var(--on-bg); }
+  .finish .badge { width: 92px; height: 92px; display: grid; place-items: center; background: var(--accent); color: #fff;
+    font: 600 40px Oswald, sans-serif;
+    clip-path: polygon(50% 0, 61% 18%, 82% 10%, 80% 32%, 100% 40%, 85% 56%, 96% 76%, 74% 79%, 68% 100%, 50% 88%, 32% 100%, 26% 79%, 4% 76%, 15% 56%, 0 40%, 20% 32%, 18% 10%, 39% 18%); }
+  .finish.locked .badge { background: color-mix(in srgb, var(--on-bg) 28%, var(--bg)); }
+  .finish:not(.locked) .badge { animation: spin 14s linear infinite; }
+  .finish:not(.locked) .badge span { animation: spin 14s linear infinite reverse; }
+  .finish .lbl { font: 600 12px Oswald, sans-serif; letter-spacing: .22em; text-transform: uppercase; color: var(--on-bg-muted); }
+  .finish:not(.locked) .lbl { color: var(--accent); }
+  .finish.shake { animation: shake .4s; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shake { 25% { transform: translate(calc(-50% - 6px), -50%); } 75% { transform: translate(calc(-50% + 6px), -50%); } }
+  .hint { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; transition: .3s;
+    background: var(--paper); color: var(--ink); padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 900; pointer-events: none; }
+  .hint.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* переключатель темы — на время согласования */
+  .theme { position: fixed; top: 14px; right: 14px; z-index: 800; display: flex; gap: 4px; padding: 4px;
+    background: color-mix(in srgb, var(--on-bg) 10%, transparent); border-radius: 999px; backdrop-filter: blur(6px); }
+  .theme button { border: 0; border-radius: 999px; padding: 7px 14px; font: 600 13px Manrope, sans-serif; cursor: pointer;
+    background: transparent; color: var(--on-bg); }
+  .theme button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  /* окно с видео */
+  .modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center;
+    background: var(--shade); padding: 16px; }
+  .modal.open { display: flex; animation: fade .3s ease; }
+  @keyframes fade { from { opacity: 0; } }
+  .vcard { width: min(880px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--paper); color: var(--ink);
+    border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.45); animation: rise .35s cubic-bezier(.2,.8,.2,1); position: relative; }
+  @keyframes rise { from { transform: translateY(24px) scale(.98); } }
+  .vcard video { display: block; width: 100%; aspect-ratio: 16/9; background: #0f1416; }
+  .vcard .body { padding: 18px 22px 20px; display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: end; }
+  .vcard .num { font: 600 12px Oswald, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--amber-deep); }
+  .vcard h2 { grid-column: 1; margin: 0; font: 600 clamp(26px, 4vw, 34px)/1.1 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+  .vcard .date { color: var(--muted); font-size: 15px; }
+  .vcard .txt { grid-column: 1 / -1; margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
+  .nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
+  .btn { border: 0; border-radius: 999px; padding: 11px 18px; font: 600 14px Manrope, sans-serif; cursor: pointer;
+    background: var(--paper-2); color: var(--ink); }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .close { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border-radius: 50%; border: 0;
+    background: rgba(244,237,225,.95); color: var(--ink); font-size: 22px; cursor: pointer; z-index: 2; }
+
+  /* финал — коробка с бантом, внутри билет (шрифт Golos Text) */
+  #giftModal { padding: 0; background: radial-gradient(ellipse at 50% 58%, rgba(234,127,36,.16), transparent 60%), rgba(8,12,14,.9); }
+  .gstage { position: absolute; inset: 0; overflow: hidden; font-family: "Golos Text", Manrope, sans-serif; }
+  .gstage.done { overflow: auto; }
+  .gbox { position: absolute; left: 50%; top: 56%; width: min(360px, 74vw); transform: translate(-50%, -50%);
+    cursor: pointer; z-index: 3; overflow: visible; -webkit-tap-highlight-color: transparent; }
+  .gbox.off { pointer-events: none; }
+  .gbox:focus { outline: none; }
+  .glow { position: absolute; left: 50%; top: 0; width: 760px; height: 760px; margin: -380px 0 0 -380px; z-index: 1;
+    border-radius: 50%; opacity: 0; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,214,150,.55) 0, rgba(242,154,58,.22) 28%, transparent 62%),
+      repeating-conic-gradient(from 0deg, rgba(255,220,160,.16) 0 7deg, transparent 7deg 20deg);
+    -webkit-mask: radial-gradient(circle, #000 18%, transparent 66%); mask: radial-gradient(circle, #000 18%, transparent 66%); }
+  .gpull { position: absolute; left: 50%; bottom: max(28px, 7vh); transform: translateX(-50%); z-index: 4; pointer-events: none;
+    font: 600 17px "Golos Text", sans-serif; color: var(--paper); letter-spacing: .02em; white-space: nowrap;
+    background: rgba(13,20,23,.55); padding: 10px 20px; border-radius: 999px; transition: opacity .4s; animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: translateX(-50%) scale(1.05); } }
+  .gpull.off { opacity: 0; }
+  .gsound { position: absolute; top: 12px; left: 12px; z-index: 6; height: 40px; padding: 0 16px; border: 0; border-radius: 999px;
+    background: rgba(244,237,225,.95); color: var(--ink); font: 600 14px "Golos Text", sans-serif; cursor: pointer; display: none; }
+  .gsound.on { display: block; }
+  #giftModal .close { z-index: 6; }
+
+  .gt { position: absolute; left: 50%; top: 50%; z-index: 2; width: min(700px, calc(100vw - 32px)); opacity: 0;
+    display: grid; grid-template-columns: 1fr 156px; color: var(--ink); background: var(--paper); border-radius: 18px;
+    transform-origin: 50% 50%; will-change: transform; box-shadow: 0 30px 80px rgba(0,0,0,.45);
+    --nx: calc(100% - 156px);
+    -webkit-mask: radial-gradient(circle 13px at var(--nx) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 13px at var(--nx) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    mask: radial-gradient(circle 13px at var(--nx) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 13px at var(--nx) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat; }
+  .gt.front { z-index: 5; }
+  .gt .main { padding: 24px 26px 26px; min-width: 0; }
+  .gt .kick { display: flex; justify-content: space-between; gap: 12px; font: 600 12px/1.2 "Golos Text", sans-serif;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--amber-deep); }
+  .gt h2 { margin: 10px 0 18px; font: 700 clamp(28px, 5.2vw, 40px)/1.04 "Golos Text", sans-serif; letter-spacing: -.01em; }
+  .gt dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; padding-top: 16px; border-top: 2px solid var(--paper-2); }
+  .gt dl div { position: relative; min-width: 0; }
+  .gt dl div.wide { grid-column: 1 / -1; }
+  .gt dt { font: 600 11px/1.2 "Golos Text", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .gt dd { margin: 4px 0 0; font: 600 16px/1.35 "Golos Text", sans-serif; }
+  .gt dd small { display: block; margin-top: 2px; font: 500 14px/1.35 "Golos Text", sans-serif; color: var(--muted); }
+  .gt .stamp { position: absolute; right: 2px; top: -6px; padding: 5px 12px 4px; border: 3px solid #c23a1a; border-radius: 6px;
+    color: #c23a1a; font: 700 15px/1 "Golos Text", sans-serif; letter-spacing: .16em; text-transform: uppercase;
+    transform: rotate(-9deg); opacity: 0; mix-blend-mode: multiply; }
+  .gt .stamp.on { animation: stamp .45s cubic-bezier(.3,1.6,.5,1) forwards; }
+  @keyframes stamp { from { opacity: 0; transform: rotate(-9deg) scale(2.4); } to { opacity: .85; transform: rotate(-9deg) scale(1); } }
+  .gt .stub { background: var(--amber); color: #fff8ef; border-radius: 0 18px 18px 0; padding: 24px 14px 20px;
+    border-left: 2px dashed rgba(255,248,239,.55); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .gt .stub svg { width: 96px; height: auto; margin-top: 6px; }
+  .gt .stub b { font: 700 64px/1 "Golos Text", sans-serif; margin-top: 10px; }
+  .gt .stub span { font: 600 12px/1.2 "Golos Text", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+  .gt .stub i { font-style: normal; display: block; width: 100%; height: 46px; margin-top: auto;
+    background: repeating-linear-gradient(90deg, #fff8ef 0 2px, transparent 2px 5px, #fff8ef 5px 9px, transparent 9px 11px, #fff8ef 11px 12px, transparent 12px 16px); opacity: .9; }
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 1100; }
+
+  @media (max-width: 699px) {
+    .hero { padding-top: 64px; }
+    .sign { transform: translate(0, -50%); flex-direction: row; }
+    .sign .post { width: 22px; height: 3px; order: -1; }
+    .sign .card { min-width: 0; max-width: none; width: calc(100vw - 132px); }
+    .flag .pole { height: 56px; }
+    .flag .cloth { bottom: 24px; font-size: 18px; }
+    .finish .badge { width: 76px; height: 76px; font-size: 32px; }
+    .gt { grid-template-columns: 1fr; --ny: calc(100% - 118px);
+      -webkit-mask: radial-gradient(circle 13px at 0 var(--ny), #0000 97%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 13px at 100% var(--ny), #0000 97%, #000) right / 51% 100% no-repeat;
+      mask: radial-gradient(circle 13px at 0 var(--ny), #0000 97%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 13px at 100% var(--ny), #0000 97%, #000) right / 51% 100% no-repeat; }
+    .gt .main { padding: 20px 18px 20px; }
+    .gt h2 { margin: 8px 0 14px; }
+    .gt dl { grid-template-columns: 1fr; gap: 11px; padding-top: 12px; }
+    .gt dd { font-size: 15px; }
+    .gt .stub { height: 118px; border-radius: 0 0 18px 18px; border-left: 0; border-top: 2px dashed rgba(255,248,239,.55);
+      flex-direction: row; justify-content: center; gap: 14px; padding: 14px 18px; }
+    .gt .stub svg { width: 78px; margin: 0; }
+    .gt .stub b { font-size: 48px; margin: 0; }
+    .gt .stub i { width: 70px; height: 54px; margin: 0 0 0 auto; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="theme" role="group" aria-label="Оформление">
+  <button data-theme-btn="night">Ночь</button><button data-theme-btn="day">День</button>
+</div>
+
+<header class="hero">
+  <div class="over" id="over"></div>
+  <h1 id="h1"></h1>
+  <p id="intro"></p>
+  <div class="progress"><div class="bar"><i id="bar"></i></div><span id="count"></span></div>
+</header>
+
+<main id="road"></main>
+<div class="hint" id="hint">Сначала проедь всю дорогу — открой все поездки</div>
+
+<div class="modal" id="tripModal">
+  <div class="vcard">
+    <button class="close" data-close aria-label="Закрыть">×</button>
+    <video id="vid" controls playsinline preload="metadata"></video>
+    <div class="body">
+      <div class="num" id="tNum"></div>
+      <h2 id="tPlace"></h2>
+      <div class="date" id="tDate"></div>
+      <p class="txt" id="tText"></p>
+      <div class="nav">
+        <button class="btn" id="prev">← Назад</button>
+        <button class="btn primary" id="next">Дальше →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="giftModal">
+  <div class="gstage" id="gStage">
+    <button class="close" data-close aria-label="Закрыть">×</button>
+    <button class="gsound" id="gSound">♪ Выключить звук</button>
+    <div class="glow" id="gGlow"></div>
+    <div class="gt" id="gTicket">
+      <div class="main">
+        <div class="kick"><span id="gKick"></span></div>
+        <h2 id="gTitle"></h2>
+        <dl id="gFields"></dl>
+      </div>
+      <div class="stub">
+        <svg viewBox="0 0 120 54" aria-hidden="true" fill="#fff8ef">
+          <path d="M8 38 L8 28 Q8 23 14 22 L32 19 L44 8 Q47 5 52 5 L80 5 Q85 5 88 9 L98 20 L108 22 Q114 24 114 30 L114 38 Z"/>
+          <path d="M48 10 L80 10 L91 21 L40 21 Z" fill="#ea7f24"/><rect x="64" y="10" width="3" height="11" fill="#fff8ef"/>
+          <circle cx="32" cy="40" r="10" fill="#1b2428"/><circle cx="32" cy="40" r="4"/>
+          <circle cx="92" cy="40" r="10" fill="#1b2428"/><circle cx="92" cy="40" r="4"/>
+        </svg>
+        <b>2</b><span>пассажира</span><i></i>
+      </div>
+    </div>
+    <svg class="gbox" id="gBox" viewBox="0 0 400 420" role="button" aria-label="Развязать бант">
+      <ellipse cx="200" cy="404" rx="170" ry="14" fill="rgba(0,0,0,.35)"/>
+      <g id="bBody">
+        <rect x="60" y="220" width="280" height="180" rx="6" fill="#efe6d6"/>
+        <rect x="300" y="220" width="40" height="180" rx="6" fill="#000" opacity=".06"/>
+        <g fill="#e2d4bb">
+          <circle cx="98" cy="262" r="5"/><circle cx="140" cy="318" r="5"/><circle cx="96" cy="362" r="5"/>
+          <circle cx="262" cy="258" r="5"/><circle cx="304" cy="312" r="5"/><circle cx="258" cy="366" r="5"/>
+        </g>
+        <g id="bBand">
+          <rect x="178" y="220" width="44" height="180" fill="#ea7f24"/>
+          <rect x="178" y="220" width="6" height="180" fill="#c2601a" opacity=".5"/>
+          <rect x="60" y="292" width="280" height="36" fill="#ea7f24"/>
+          <rect x="60" y="322" width="280" height="6" fill="#c2601a" opacity=".5"/>
+        </g>
+      </g>
+      <g id="bLid">
+        <rect x="46" y="168" width="308" height="56" rx="6" fill="#f4ede1"/>
+        <rect x="46" y="214" width="308" height="10" rx="4" fill="#000" opacity=".08"/>
+        <g id="bLidBand">
+          <rect x="178" y="168" width="44" height="56" fill="#ea7f24"/>
+          <rect x="178" y="168" width="6" height="56" fill="#c2601a" opacity=".5"/>
+        </g>
+      </g>
+      <g id="bEnds" fill="none" stroke="#ea7f24" stroke-width="16" stroke-linecap="round">
+        <path d="M196 170 C 150 172, 72 170, 58 212 C 46 258, 74 320, 48 396"/>
+        <path d="M204 170 C 250 172, 328 170, 342 212 C 354 258, 326 320, 352 396"/>
+      </g>
+      <g id="bBow">
+        <g id="bTails" fill="#d96d1c">
+          <path d="M194 170 L166 218 L178 213 L184 226 L206 174 Z"/>
+          <path d="M206 170 L234 218 L222 213 L216 226 L194 174 Z"/>
+        </g>
+        <g id="bLoopL">
+          <path d="M200 166 C 168 116, 106 106, 102 140 C 99 168, 158 174, 200 166 Z" fill="#ea7f24"/>
+          <path d="M200 166 C 172 148, 136 142, 122 148 C 146 160, 176 166, 200 166 Z" fill="#c2601a" opacity=".65"/>
+        </g>
+        <g id="bLoopR" transform="translate(400 0) scale(-1 1)">
+          <path d="M200 166 C 168 116, 106 106, 102 140 C 99 168, 158 174, 200 166 Z" fill="#f29a3a"/>
+          <path d="M200 166 C 172 148, 136 142, 122 148 C 146 160, 176 166, 200 166 Z" fill="#c2601a" opacity=".55"/>
+        </g>
+        <rect id="bKnot" x="187" y="154" width="26" height="24" rx="8" fill="#d96d1c"/>
+      </g>
+    </svg>
+    <div class="gpull" id="gPull">Потяни за ленточку</div>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const G = window.GIFT, trips = G.trips, $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const yearOf = t => (String(t.date).match(/\d{4}/) || [""])[0];
+
+  // тема (на время согласования)
+  const setTheme = t => {
+    document.documentElement.dataset.theme = t;
+    document.querySelectorAll("[data-theme-btn]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeBtn === t));
+  };
+  document.querySelectorAll("[data-theme-btn]").forEach(b => b.onclick = () => setTheme(b.dataset.themeBtn));
+  setTheme(new URLSearchParams(location.search).get("theme") || "night");
+
+  $("over").textContent = G.overline;
+  $("h1").innerHTML = G.title.replace(/(\S+)$/, "<em>$1</em>");
+  $("intro").textContent = G.intro;
+  document.title = G.title;
+
+  const KEY = "gift-seen";
+  let seen = new Set();
+  try { seen = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...seen])); } catch (e) {} };
+  const ready = () => seen.size >= trips.length;
+
+  // детерминированный «случай» — декор одинаковый при каждой отрисовке
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent && parent.appendChild(e);
+    return e;
+  };
+
+  let pathEl, slots = [], vehTypes = ["car"], vehScale = 1, laneOff = 0, totalLen = 0, stopLen = [];
+  const road = $("road");
+
+  function build() {
+    seed = 7;
+    road.innerHTML = "";
+    const W = road.clientWidth, mobile = W < 700, n = trips.length;
+    const RW = mobile ? 30 : 46;                 // ширина дороги
+    const rowH = mobile ? 200 : 240;
+    const y0 = mobile ? 110 : 170;
+    let d, H, pts = [], finish, signs = [], flags = [], stops = [];
+
+    if (!mobile) {
+      const r = rowH / 2, m = r + RW / 2 + 24;
+      const xs = i => i % 2 ? W - m : m, xe = i => i % 2 ? m : W - m;
+      d = `M ${40} ${y0}`;
+      for (let i = 0; i < n; i++) {
+        const y = y0 + i * rowH;
+        if (i > 0) d += ` A ${r} ${r} 0 0 ${(i - 1) % 2 ? 0 : 1} ${xs(i)} ${y}`;
+        const last = i === n - 1;
+        const end = last ? (i % 2 ? 90 : W - 90) : xe(i);
+        d += ` L ${end} ${y}`;
+        const a = i === 0 ? 40 : xs(i), L = end - a;
+        const sx = a + L * [.5, .44, .6, .4, .56, .46][i % 6];
+        signs.push({ x: sx, y: y - RW / 2 + 2 });
+        stops.push({ x: sx, y });
+        flags.push({ x: a + (i % 2 ? -1 : 1) * Math.min(70, Math.abs(L) * .1) + (i === 0 ? 30 : 0), y: y - RW / 2 + 2, left: i % 2 === 1 });
+        pts.push({ y, a, end });
+        if (last) finish = { x: end + (i % 2 ? -10 : 10), y };
+      }
+      H = y0 + (n - 1) * rowH + 130;
+    } else {
+      const xA = 38, xB = 62, h = rowH;
+      const x = i => i % 2 ? xB : xA;
+      d = `M ${x(0)} ${y0 - 70} L ${x(0)} ${y0}`;
+      for (let i = 0; i <= n; i++) {
+        const y = y0 + i * h;
+        if (i > 0) d += ` C ${x(i - 1)} ${y - h / 2}, ${x(i)} ${y - h / 2}, ${x(i)} ${y}`;
+        if (i < n) {
+          signs.push({ x: x(i) + RW / 2 + 2, y });
+          stops.push({ x: x(i), y });
+          flags.push({ x: x(i) + RW / 2 + 26, y: y - 52, left: false });
+        }
+      }
+      finish = { x: x(n), y: y0 + n * h };
+      H = finish.y + 90;
+    }
+
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true" }, road);
+    road.style.height = H + "px";
+
+    // звёздная пыль
+    const dots = el("g", { fill: "var(--dot)" }, svg);
+    for (let k = 0; k < (mobile ? 60 : 140); k++) el("circle", { cx: rnd() * W, cy: rnd() * H, r: rnd() * 1.6 + .6 }, dots);
+
+    // деревья и холмы под прямыми
+    if (!mobile) {
+      const deco = el("g", {}, svg);
+      pts.forEach((p, i) => {
+        const lo = Math.min(p.a, p.end), hi = Math.max(p.a, p.end);
+        [.14, .82].forEach((f, j) => {
+          const cx = lo + (hi - lo) * (f + (rnd() - .5) * .06), base = p.y + RW / 2 + 44 + rnd() * 10;
+          if ((i + j) % 3 === 2) {
+            el("path", { d: `M ${cx - 46} ${base} Q ${cx} ${base - 40} ${cx + 46} ${base} Z`, fill: "var(--tree1)", opacity: .55 }, deco);
+          }
+          const cnt = 2 + (rnd() * 2 | 0);
+          for (let t = 0; t < cnt; t++) {
+            const tx = cx + (t - cnt / 2) * 16 + rnd() * 6, th = 26 + rnd() * 16;
+            el("rect", { x: tx - 1, y: base - 6, width: 2, height: 8, fill: "var(--post)" }, deco);
+            if (rnd() > .45) el("path", { d: `M ${tx} ${base - 6 - th} L ${tx + th * .33} ${base - 6} L ${tx - th * .33} ${base - 6} Z`, fill: t % 2 ? "var(--tree2)" : "var(--tree1)" }, deco);
+            else el("ellipse", { cx: tx, cy: base - 6 - th * .38, rx: th * .3, ry: th * .42, fill: t % 2 ? "var(--tree2)" : "var(--tree1)" }, deco);
+          }
+        });
+      });
+    }
+
+    // дорога
+    el("path", { d, fill: "none", stroke: "rgba(0,0,0,.18)", "stroke-width": RW + 6, "stroke-linecap": "round", "stroke-linejoin": "round", transform: "translate(0 4)" }, svg);
+    pathEl = el("path", { d, fill: "none", stroke: "var(--road)", "stroke-width": RW, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    el("path", { d, fill: "none", stroke: "var(--lane)", "stroke-width": mobile ? 2 : 2.5, "stroke-dasharray": mobile ? "9 9" : "14 12", "stroke-linecap": "round", opacity: .75 }, svg);
+    totalLen = pathEl.getTotalLength();
+
+    // транспорт: до двух значков рядом (она самолётом, он поездом); у каждого тень для полёта
+    slots = [0, 1].map(() => ({ sh: el("g", { opacity: 0 }, svg) }));
+    slots.forEach(s => s.g = el("g", {}, svg));
+    vehScale = mobile ? .9 : 1.25;
+    laneOff = RW * .24;
+    drawVehicle(vehTypes);
+    samples = [];
+    for (let L = 0; L <= totalLen; L += 24) { const q = pathEl.getPointAtLength(L); samples.push([L, q.x, q.y]); }
+    stopLen = stops.map(p => nearestLen(p));
+
+    // флажки — когда меняется год
+    trips.forEach((t, i) => {
+      if (i > 0 && yearOf(t) === yearOf(trips[i - 1])) return;
+      const f = flags[i], div = document.createElement("div");
+      div.className = "flag" + (f.left ? " left" : "");
+      div.style.left = f.x + "px"; div.style.top = f.y + "px";
+      div.innerHTML = `<div class="pole"></div><div class="cloth">${yearOf(t)}</div>`;
+      road.appendChild(div);
+    });
+
+    // указатели
+    signEls = trips.map((t, i) => {
+      const s = signs[i], b = document.createElement("button");
+      b.className = "sign";
+      b.style.left = s.x + "px";
+      b.style.top = (mobile ? s.y + (yearOf(t) !== yearOf(trips[i - 1] || {}) ? 18 : 0) : s.y) + "px";
+      b.innerHTML = `<div class="card"><b>${t.place}</b><small>${t.date}</small></div><div class="post"></div>`;
+      b.onclick = () => goTo(i);
+      road.appendChild(b);
+      return b;
+    });
+
+    // финиш
+    finishEl = document.createElement("button");
+    finishEl.className = "finish";
+    finishEl.style.left = finish.x + "px"; finishEl.style.top = finish.y + "px";
+    finishEl.innerHTML = `<div class="badge"><span>?</span></div><div class="lbl">Финиш</div>`;
+    finishEl.onclick = () => {
+      if (ready()) return closeAll(), travel(trips.length, G.gift.transport || "plane", openGift);
+      finishEl.classList.remove("shake"); void finishEl.offsetWidth; finishEl.classList.add("shake");
+      $("hint").classList.add("on"); clearTimeout(hintT); hintT = setTimeout(() => $("hint").classList.remove("on"), 2200);
+    };
+    road.appendChild(finishEl);
+
+    refresh();
+    posLen = lenOf(at);
+    place(posLen, 1, 0);
+  }
+  let signEls = [], finishEl, hintT;
+
+  // ближайшая к точке длина вдоль дороги; точки дороги считаются один раз в build() —
+  // getPointAtLength на длинной дороге медленный, при 41 поездке страница зависала
+  let samples = [];
+  function nearestLen(p) {
+    let best = 0, bd = Infinity;
+    for (const [L, x, y] of samples) {
+      const dd = (x - p.x) ** 2 + (y - p.y) ** 2;
+      if (dd < bd) { bd = dd; best = L; }
+    }
+    for (let L = Math.max(0, best - 24); L <= Math.min(totalLen, best + 24); L += 2) {   // уточнить рядом
+      const q = pathEl.getPointAtLength(L), dd = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+      if (dd < bd) { bd = dd; best = L; }
+    }
+    return best;
+  }
+
+  // значки транспорта, вид сверху, нос смотрит вправо
+  const VEH = {
+    car: g => {
+      el("rect", { x: -17, y: -9, width: 34, height: 18, rx: 5 }, g);
+      el("rect", { x: 3, y: -7, width: 7, height: 14, rx: 2, class: "win" }, g);
+      el("rect", { x: -12, y: -7, width: 5, height: 14, rx: 2, class: "win" }, g);
+    },
+    plane: g => {
+      el("rect", { x: -22, y: -4, width: 46, height: 8, rx: 4 }, g);
+      el("path", { d: "M 6 0 L -6 -24 L -12 -24 L -5 0 L -12 24 L -6 24 Z" }, g);
+      el("path", { d: "M -15 0 L -22 -10 L -26 -10 L -21 0 L -26 10 L -22 10 Z" }, g);
+      el("rect", { x: 15, y: -2, width: 5, height: 4, rx: 1.5, class: "win" }, g);
+    },
+    train: g => {
+      el("rect", { x: 0, y: -8, width: 24, height: 16, rx: 5 }, g);
+      el("rect", { x: 15, y: -6, width: 5, height: 12, rx: 1.5, class: "win" }, g);
+      el("rect", { x: -23, y: -8, width: 21, height: 16, rx: 2, opacity: .85 }, g);
+      el("rect", { x: -46, y: -8, width: 21, height: 16, rx: 2, opacity: .7 }, g);
+    },
+    bus: g => {
+      el("rect", { x: -24, y: -9, width: 48, height: 18, rx: 4 }, g);
+      el("rect", { x: 17, y: -7, width: 4, height: 14, rx: 1.5, class: "win" }, g);
+      el("rect", { x: -18, y: -3, width: 30, height: 6, rx: 2, class: "win" }, g);
+    },
+    ship: g => {
+      el("path", { d: "M 26 0 Q 16 -11 -20 -10 L -22 0 L -20 10 Q 16 11 26 0 Z" }, g);
+      el("rect", { x: -12, y: -5, width: 16, height: 10, rx: 2, class: "win" }, g);
+      el("circle", { cx: 12, cy: 0, r: 2.5, class: "win" }, g);
+    }
+  };
+  // type — строка или список из двух: ["plane", "train"]
+  function drawVehicle(type) {
+    vehTypes = [].concat(type).filter(t => VEH[t]).slice(0, 2);
+    if (!vehTypes.length) vehTypes = ["car"];
+    vehTypes.sort((a, b) => (a === "plane") - (b === "plane"));   // самолёт рисуется поверх
+    slots.forEach((s, i) => [s.g, s.sh].forEach((g, k) => {
+      g.innerHTML = "";
+      if (!vehTypes[i]) return;
+      const inner = el("g", { fill: k ? "rgba(0,0,0,.45)" : "var(--car)" }, g);
+      VEH[vehTypes[i]](inner);
+      if (!k) inner.querySelectorAll(".win").forEach(w => w.setAttribute("fill", "var(--lane)"));
+      else inner.querySelectorAll(".win").forEach(w => w.remove());
+    }));
+  }
+
+  // положение транспорта: L — длина вдоль дороги, dir — куда смотрит, lift — высота полёта
+  let posLen = 0, at = -1, moving = false;
+  const lenOf = k => k < 0 ? 0 : k >= trips.length ? totalLen : stopLen[k];
+  function place(L, dir, lift) {
+    const p = pathEl.getPointAtLength(L);
+    let q = pathEl.getPointAtLength(Math.min(totalLen, Math.max(0, L + dir * 2)));
+    if (Math.hypot(q.x - p.x, q.y - p.y) < .1) { const r = pathEl.getPointAtLength(L - dir * 2); q = { x: 2 * p.x - r.x, y: 2 * p.y - r.y }; }
+    const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+    vehTypes.forEach((type, i) => {
+      // два значка расходятся по своим полосам, второй (самолёт) чуть впереди; взлетает только самолёт
+      const two = vehTypes.length > 1, off = two ? (i ? -laneOff : laneOff) : 0, ahead = two ? (i ? 26 : -14) * vehScale : 0;
+      const up = type === "plane" ? lift : 0;
+      slots[i].g.setAttribute("transform", `translate(${p.x} ${p.y}) rotate(${ang}) translate(${ahead} ${off}) scale(${vehScale * (1 + .5 * up)})`);
+      slots[i].sh.setAttribute("transform", `translate(${p.x + up * 14} ${p.y + up * 22}) rotate(${ang}) translate(${ahead} ${off}) scale(${vehScale})`);
+      slots[i].sh.setAttribute("opacity", up * .8);
+    });
+    return p;
+  }
+
+  // поездка по дороге к остановке k (-1 старт, 0..n-1 поездки, n финиш)
+  function travel(k, type, done) {
+    if (moving) return;
+    const from = posLen, to = lenOf(k), dist = Math.abs(to - from), dir = to >= from ? 1 : -1;
+    drawVehicle(type);
+    if (dist < 2) { at = k; place(to, dir, 0); return done(); }
+    moving = true;
+    const fly = vehTypes.includes("plane");
+    const dur = Math.min(4200, Math.max(900, dist / (fly ? 1.1 : .7)));
+    const roadDocTop = road.getBoundingClientRect().top + scrollY;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const t0 = performance.now();
+    (function step(now) {
+      const t = reduce ? 1 : Math.min(1, (now - t0) / dur);
+      const e = t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+      posLen = from + (to - from) * e;
+      const p = place(posLen, dir, fly ? Math.sin(Math.PI * t) : 0);
+      scrollTo(0, roadDocTop + p.y - innerHeight * .5);
+      if (t < 1) return requestAnimationFrame(step);
+      moving = false; at = k;
+      setTimeout(done, 280);
+    })(t0);
+  }
+
+  function refresh() {
+    signEls.forEach((b, i) => b.classList.toggle("seen", seen.has(i)));
+    $("bar").style.width = (100 * seen.size / trips.length) + "%";
+    $("count").textContent = `${seen.size} из ${trips.length}`;
+    if (finishEl) {
+      finishEl.classList.toggle("locked", !ready());
+      finishEl.querySelector(".lbl").textContent = ready() ? "Открыть сюрприз" : "Финиш";
+    }
+  }
+
+  // окно поездки
+  let cur = 0;
+  const vid = $("vid");
+  function openTrip(i) {
+    cur = i;
+    const t = trips[i];
+    $("tNum").textContent = `Поездка ${i + 1} из ${trips.length}`;
+    $("tPlace").textContent = t.place;
+    $("tDate").textContent = t.date;
+    $("tText").textContent = t.text || "";
+    vid.src = t.video;
+    if (t.poster) vid.poster = t.poster; else vid.removeAttribute("poster");
+    $("prev").disabled = i === 0;
+    $("next").textContent = i === trips.length - 1 ? "К финишу →" : "Дальше →";
+    $("tripModal").classList.add("open");
+    vid.play().catch(() => {});
+    seen.add(i); save(); refresh();
+  }
+  function closeAll() {
+    vid.pause();
+    song.pause(); cancelAnimationFrame(gRaf);
+    document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+  }
+  function goTo(i) {
+    closeAll();
+    travel(i, trips[i].transport || "car", () => openTrip(i));
+  }
+  $("prev").onclick = () => cur > 0 && goTo(cur - 1);
+  $("next").onclick = () => {
+    if (cur < trips.length - 1) return goTo(cur + 1);
+    closeAll();
+    finishEl.click();
+  };
+  document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeAll);
+  document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeAll(); }));
+  addEventListener("keydown", e => {
+    if (e.key === "Escape") closeAll();
+    if (!$("tripModal").classList.contains("open")) return;
+    if (e.key === "ArrowRight") $("next").click();
+    if (e.key === "ArrowLeft") $("prev").click();
+  });
+
+  // финал: коробка с бантом → бант развязывается → крышка улетает → из коробки поднимается билет.
+  // Время t — секунды от нажатия, песня стартует в тот же момент; на g.reveal — конфетти.
+  const song = new Audio();
+  let gRaf = 0, gPulled = false, gT0 = 0, gGeo = null, gBoom = false;
+  const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const sm = (t, a, b) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+  const outC = (t, a, b) => 1 - (1 - clamp((t - a) / (b - a))) ** 3;
+  const mix = (a, b, k) => a + (b - a) * k;
+  const tf = (id, v) => $(id).setAttribute("transform", v);
+  const around = (s, x, y) => `translate(${x} ${y}) scale(${s}) translate(${-x} ${-y})`;
+  document.querySelectorAll("#bEnds path").forEach(p => { p.setAttribute("pathLength", 1); p.setAttribute("stroke-dasharray", "1 1"); });
+
+  function openGift() {
+    closeAll();
+    const g = G.gift, dl = $("gFields");
+    $("gKick").textContent = g.kicker;
+    $("gTitle").textContent = g.title;
+    dl.innerHTML = "";
+    g.fields.forEach(([k, v, sub]) => {
+      const d = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd");
+      if (sub || v.length > 45) d.className = "wide";
+      dt.textContent = k; dd.textContent = v;
+      if (sub) { const s = document.createElement("small"); s.textContent = sub; dd.appendChild(s); }
+      d.append(dt, dd);
+      if (k === g.secret) { const st = document.createElement("span"); st.className = "stamp"; st.textContent = "Секретно"; d.appendChild(st); }
+      dl.appendChild(d);
+    });
+    song.src = g.song; song.currentTime = 0; song.muted = false;
+    $("gSound").textContent = "♪ Выключить звук"; $("gSound").classList.remove("on");
+    $("gStage").classList.remove("done"); $("gStage").scrollTop = 0;
+    $("gBox").classList.remove("off"); $("gPull").classList.remove("off");
+    gPulled = false; gBoom = false;
+    $("giftModal").classList.add("open");
+    giftFrame(0);
+    cancelAnimationFrame(gRaf);
+    (function idle(now) {           // пока не потянули — бант покачивается
+      if (gPulled) return;
+      tf("bBow", `rotate(${Math.sin(now / 260) * 3} 200 166)`);
+      gRaf = requestAnimationFrame(idle);
+    })(performance.now());
+  }
+
+  // где билет стартует (внутри коробки) и куда поднимается — в пикселях от центра экрана
+  function giftGeo() {
+    const tk = $("gTicket"), st = $("gStage").getBoundingClientRect();
+    tk.style.transform = "translate(-50%, -50%)";
+    const r = tk.getBoundingClientRect(), b = $("gBox").getBoundingClientRect();
+    const k = b.width / 400, top = b.top + 220 * k, s0 = Math.min(280 * k * .8 / r.width, 180 * k * .85 / r.height), h = r.height * s0;
+    const cy = r.top + r.height / 2, cx = r.left + r.width / 2;
+    const fy = Math.max(0, (r.height - st.height) / 2 + 16);   // высокий билет на низком экране — не обрезать верх
+    return { s0, fy, y0: top + h / 2 + 8 - cy, y1: top - h / 2 - 34 - cy, dx: b.left + b.width / 2 - cx, top: top - st.top, cx: b.left + b.width / 2 - st.left };
+  }
+
+  function giftFrame(t) {
+    // бант: рывок вверх, петли сворачиваются в узел, хвосты ленты сползают по бокам
+    const tug = Math.sin(Math.PI * clamp(t / .5)), L = sm(t, .35, 1.4);
+    tf("bBow", `translate(0 ${-12 * tug})`);
+    tf("bLoopL", `rotate(${-50 * L} 200 166) ${around(1 - .9 * L, 200, 166)}`);
+    tf("bLoopR", `rotate(${50 * L} 200 166) ${around(1 - .9 * L, 200, 166)} translate(400 0) scale(-1 1)`);
+    ["bLoopL", "bLoopR"].forEach(id => $(id).setAttribute("opacity", 1 - sm(t, 1.1, 1.4)));
+    $("bTails").setAttribute("opacity", 1 - sm(t, .5, 1));
+    tf("bKnot", around(1 - sm(t, 1.1, 1.5), 200, 166));
+    const fall = sm(t, 1.7, 2.6);
+    document.querySelectorAll("#bEnds path").forEach(p => p.setAttribute("stroke-dashoffset", 1 - sm(t, .6, 1.5)));
+    tf("bEnds", `translate(0 ${260 * fall * fall})`);
+    $("bEnds").setAttribute("opacity", t < .6 ? 0 : 1 - fall);
+    // лента на коробке соскальзывает
+    const band = sm(t, 1.5, 2.4);
+    ["bBand", "bLidBand"].forEach(id => { tf(id, `translate(0 ${30 * band})`); $(id).setAttribute("opacity", 1 - band); });
+    // крышка подпрыгивает и улетает
+    const pop = Math.sin(Math.PI * clamp((t - 2.35) / .4)), fly = sm(t, 2.7, 3.5) ** 2;
+    tf("bLid", `translate(${-170 * fly} ${-22 * pop - 480 * fly}) rotate(${-40 * fly} 200 196)`);
+    $("bLid").setAttribute("opacity", 1 - sm(t, 3.2, 3.5));
+    // свет из коробки, билет поднимается, потом вырастает в центр
+    const up = outC(t, 3.3, 4.9), grow = sm(t, 5, 6.7), G0 = gGeo;
+    if (G0) {
+      const gl = $("gGlow");
+      gl.style.left = G0.cx + "px"; gl.style.top = G0.top + "px";
+      gl.style.opacity = sm(t, 2.7, 3.4) * (1 - .6 * grow);
+      gl.style.transform = `rotate(${t * 14}deg) scale(${.7 + .3 * sm(t, 2.7, 4)})`;
+      const tk = $("gTicket");
+      tk.style.opacity = t > 3.1 ? 1 : 0;
+      tk.classList.toggle("front", grow > 0);
+      tk.style.transform = `translate(-50%, -50%) translate(${mix(G0.dx, 0, grow)}px, ${mix(mix(G0.y0, G0.y1, up), G0.fy, grow)}px) ` +
+        `rotate(${mix(mix(-8, 3, up), 0, grow)}deg) scale(${mix(G0.s0, 1, grow)})`;
+    } else $("gTicket").style.opacity = 0;
+    $("bBody").setAttribute("opacity", 1 - sm(t, 5, 6));
+    $("gBox").style.transform = `translate(-50%, calc(-50% + ${90 * grow}px))`;
+    $("gBox").style.opacity = 1 - sm(t, 5.4, 6.2);
+    const stamp = $("gFields").querySelector(".stamp");
+    if (stamp) stamp.classList.toggle("on", t > 6.8);
+    if (t >= G.gift.reveal && !gBoom) { gBoom = true; confetti(); }
+    if (t > 6.8) { $("gStage").classList.add("done"); $("gBox").classList.add("off"); }
+  }
+
+  function pullRibbon() {
+    if (gPulled) return;
+    gPulled = true;
+    $("gPull").classList.add("off");
+    gGeo = giftGeo();
+    song.play().then(() => $("gSound").classList.add("on")).catch(() => {});
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return giftFrame(99);
+    gT0 = performance.now();
+    cancelAnimationFrame(gRaf);
+    (function step(now) {
+      const t = (now - gT0) / 1000;
+      giftFrame(t);
+      if (t < 8) gRaf = requestAnimationFrame(step);
+    })(gT0);
+  }
+  $("gBox").onclick = pullRibbon;
+  $("gBox").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pullRibbon(); } };
+  $("gBox").tabIndex = 0;
+  $("gSound").onclick = () => {
+    song.muted = !song.muted;
+    $("gSound").textContent = song.muted ? "♪ Включить звук" : "♪ Выключить звук";
+  };
+
+  function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const c = $("confetti"), x = c.getContext("2d");
+    c.width = innerWidth; c.height = innerHeight;
+    const cols = ["#ea7f24", "#f29a3a", "#f4ede1", "#6f8a76", "#2b3d52"];
+    const ps = Array.from({ length: 160 }, () => ({
+      x: c.width / 2, y: c.height / 2, vx: (Math.random() - .5) * 16, vy: -Math.random() * 16 - 4,
+      r: Math.random() * 6 + 4, a: Math.random() * 6, va: (Math.random() - .5) * .3, col: cols[Math.random() * cols.length | 0]
+    }));
+    let f = 0;
+    (function step() {
+      x.clearRect(0, 0, c.width, c.height);
+      ps.forEach(p => {
+        p.vy += .38; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+        x.save(); x.translate(p.x, p.y); x.rotate(p.a); x.fillStyle = p.col; x.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); x.restore();
+      });
+      if (++f < 220) requestAnimationFrame(step); else x.clearRect(0, 0, c.width, c.height);
+    })();
+  }
+
+  let rw = 0;
+  addEventListener("resize", () => { if (road.clientWidth !== rw && !moving) { rw = road.clientWidth; build(); } });
+  document.fonts.ready.then(() => { rw = road.clientWidth; build(); });
+  rw = road.clientWidth; build();
+})();
+</script>
+</body>
+</html>
